@@ -11,14 +11,26 @@ License: MIT
 import argparse
 import csv
 import json
-import math
+import os
+import re
 import sys
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
+
+
+def _validate_input_path(filepath: str) -> str:
+    """Validate input file path to prevent path traversal."""
+    # Check for path traversal attempts before normalization
+    parts = filepath.replace("\\", "/").split("/")
+    if ".." in parts:
+        raise ValueError(f"Invalid file path: path traversal detected in '{filepath}'")
+    normalized = os.path.normpath(os.path.abspath(filepath))
+    return normalized
 
 
 def calculate_metrics(**kwargs) -> Dict[str, Any]:
     """
     Core domain algorithm for tnm8-breast-staging-calculator.
+    Validates inputs and computes a composite score with clinical classification.
     """
     params = {}
     for k, v in kwargs.items():
@@ -26,7 +38,9 @@ def calculate_metrics(**kwargs) -> Dict[str, Any]:
             try:
                 params[k] = float(v)
             except (ValueError, TypeError):
-                params[k] = str(v)
+                # Sanitize string inputs - strip control characters
+                cleaned = re.sub(r'[\x00-\x1f\x7f]', '', str(v))
+                params[k] = cleaned
 
     # Deterministic domain logic
     numeric_vals = [val for val in params.values() if isinstance(val, (int, float))]
@@ -37,7 +51,7 @@ def calculate_metrics(**kwargs) -> Dict[str, Any]:
         score += nv * (1.0 / idx)
 
     rounded_score = round(score, 2)
-    
+
     # Classification / tiering
     if rounded_score < 10.0:
         tier = "Low / Standard"
@@ -66,7 +80,11 @@ def process_single(args) -> None:
 
 
 def process_batch(input_csv: str, output_csv: str) -> None:
-    with open(input_csv, mode="r", encoding="utf-8-sig") as f:
+    # Validate input path for security
+    safe_input = _validate_input_path(input_csv)
+    safe_output = _validate_input_path(output_csv)
+
+    with open(safe_input, mode="r", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         fieldnames = list(reader.fieldnames or [])
         rows = list(reader)
@@ -82,12 +100,12 @@ def process_batch(input_csv: str, output_csv: str) -> None:
         row_dict["clinical_recommendation"] = calc_res["clinical_recommendation"]
         out_rows.append(row_dict)
 
-    with open(output_csv, mode="w", encoding="utf-8", newline="") as f:
+    with open(safe_output, mode="w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=out_fields)
         writer.writeheader()
         writer.writerows(out_rows)
 
-    print(f"Processed {len(out_rows)} records -> {output_csv}")
+    print(f"Processed {len(out_rows)} records -> {safe_output}")
 
 
 def main(argv=None):
@@ -103,15 +121,12 @@ def main(argv=None):
 
     # Batch parser
     batch_parser = subparsers.add_parser("batch", help="Process batch CSV")
-    batch_parser.add_argument("-i", "--input", required=True, help="Input CSV")
-    batch_parser.add_argument("-o", "--output", default="results.csv", help="Output CSV")
+    batch_parser.add_argument("-i", "--input", required=True, help="Input CSV file path")
+    batch_parser.add_argument("-o", "--output", default="results.csv", help="Output CSV file path")
+    batch_parser.set_defaults(func=lambda args: process_batch(args.input, args.output))
 
     args = parser.parse_args(argv)
-
-    if args.command == "single":
-        args.func(args)
-    elif args.command == "batch":
-        process_batch(args.input, args.output)
+    args.func(args)
 
 
 if __name__ == "__main__":

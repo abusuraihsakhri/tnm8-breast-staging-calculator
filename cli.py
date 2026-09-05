@@ -4,12 +4,21 @@ Command Line Interface for Tnm8 Breast Staging Calculator.
 import argparse
 import csv
 import json
+import os
 import sys
 from agents.models import SystemTaskPayload
 from agents.supervisor import SystemSupervisor
 from agents.base import AuditLogger
 
 supervisor = SystemSupervisor(model_provider="mock")
+
+
+def _validate_file_path(filepath: str) -> str:
+    """Validate file path to prevent directory traversal."""
+    normalized = os.path.normpath(os.path.abspath(filepath))
+    if ".." in os.path.split(filepath):
+        raise ValueError(f"Invalid file path: path traversal detected in '{filepath}'")
+    return normalized
 
 
 def main(argv=None):
@@ -80,7 +89,10 @@ def main(argv=None):
         return 0
 
     if args.command == "batch":
-        with open(args.input, mode="r", encoding="utf-8-sig") as f:
+        safe_input = _validate_file_path(args.input)
+        safe_output = _validate_file_path(args.output)
+
+        with open(safe_input, mode="r", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             fieldnames = list(reader.fieldnames or [])
             rows = list(reader)
@@ -104,11 +116,11 @@ def main(argv=None):
             row_dict["audit_hash"] = dossier.audit_hash
             out_rows.append(row_dict)
 
-        with open(args.output, mode="w", encoding="utf-8", newline="") as f:
+        with open(safe_output, mode="w", encoding="utf-8", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=out_fields)
             writer.writeheader()
             writer.writerows(out_rows)
-        print(f"Processed {len(out_rows)} records -> {args.output}")
+        print(f"Processed {len(out_rows)} records -> {safe_output}")
         return 0
 
     if args.command == "serve":
