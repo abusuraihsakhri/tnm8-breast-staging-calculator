@@ -3,9 +3,11 @@ FastAPI REST API Server for Tnm8 Breast Staging Calculator.
 """
 import os
 import hmac
+from pathlib import Path
 from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from .base import AuditLogger, PHIGuard, SecurityException
 from .models import SystemTaskPayload, ConsensusDossier
@@ -25,6 +27,22 @@ app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=[s.strip() for s in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",") if s.strip()],
 )
+
+
+def _require_admin(token: str | None) -> None:
+    expected = os.getenv("API_ADMIN_TOKEN")
+    if not expected or not token or not hmac.compare_digest(token, expected):
+        raise HTTPException(status_code=403, detail="An API admin token is required")
+
+
+@app.get("/", include_in_schema=False)
+def homepage():
+    return FileResponse(Path(__file__).resolve().parents[1] / "web/index.html")
+
+
+@app.get("/app.js", include_in_schema=False)
+def browser_logic():
+    return FileResponse(Path(__file__).resolve().parents[1] / "web/app.js", media_type="text/javascript")
 
 
 class StageRequest(BaseModel):
@@ -60,7 +78,8 @@ def metrics():
 
 
 @app.post("/api/audit")
-def api_audit(payload: SystemTaskPayload):
+def api_audit(payload: SystemTaskPayload, x_admin_token: str | None = Header(default=None)):
+    _require_admin(x_admin_token)
     try:
         dossier = supervisor.process_task(payload)
         return dossier.to_dict()
@@ -71,7 +90,8 @@ def api_audit(payload: SystemTaskPayload):
 
 
 @app.post("/api/chat")
-def api_chat(req: ChatRequest):
+def api_chat(req: ChatRequest, x_admin_token: str | None = Header(default=None)):
+    _require_admin(x_admin_token)
     try:
         ans = supervisor.query_supervisory_chat(req.query)
         return {"response": ans}
@@ -83,7 +103,5 @@ def api_chat(req: ChatRequest):
 
 @app.get("/api/audit/logs")
 def api_audit_logs(x_admin_token: str | None = Header(default=None)):
-    expected = os.getenv("API_ADMIN_TOKEN")
-    if not expected or not x_admin_token or not hmac.compare_digest(x_admin_token, expected):
-        raise HTTPException(status_code=403, detail="Audit logs require an API admin token")
+    _require_admin(x_admin_token)
     return {"audit_trail": AuditLogger.get_trail(), "verified": AuditLogger.verify_integrity()}
