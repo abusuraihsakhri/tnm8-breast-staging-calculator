@@ -9,16 +9,23 @@ import sys
 from agents.models import SystemTaskPayload
 from agents.supervisor import SystemSupervisor
 from agents.base import AuditLogger
+from tnm8_breast import _validate_input_path
 
 supervisor = SystemSupervisor(model_provider="mock")
 
 
 def _validate_file_path(filepath: str) -> str:
     """Validate file path to prevent directory traversal."""
-    normalized = os.path.normpath(os.path.abspath(filepath))
-    if ".." in os.path.split(filepath):
-        raise ValueError(f"Invalid file path: path traversal detected in '{filepath}'")
-    return normalized
+    return _validate_input_path(filepath)
+
+
+def _parse_csv_bool(value: str) -> bool:
+    normalized = str(value).strip().lower()
+    if normalized in ("true", "1", "yes", "y"):
+        return True
+    if normalized in ("false", "0", "no", "n", ""):
+        return False
+    raise ValueError(f"Invalid is_critical_flag value: {value!r}")
 
 
 def main(argv=None):
@@ -65,7 +72,7 @@ def main(argv=None):
         dossier = supervisor.process_task(payload)
         print("=" * 80)
         print(f"  TNM8 BREAST STAGING CALCULATOR")
-        print(f"  Domain: Clinical & Biomedical AI | Standard: CAP / CLSI / ISO Standards")
+        print(f"  Legacy experimental agent workflow — NOT breast cancer staging")
         print(f"  Dossier ID: {dossier.dossier_id} | Urgency: [{dossier.overall_urgency.value}]")
         print("=" * 80)
         for a in dossier.alerts:
@@ -79,7 +86,7 @@ def main(argv=None):
 
     if args.command == "chat":
         ans = supervisor.query_supervisory_chat(" ".join(args.query))
-        print(f"\n[Tnm8 Breast Staging Calculator Supervisor]:\n{ans}\n")
+        print(f"\n[Mock supervisory interface; not clinically validated]:\n{ans}\n")
         return 0
 
     if args.command == "verify-audit":
@@ -106,7 +113,7 @@ def main(argv=None):
                 primary_metric=float(r.get("primary_metric", 15.0)),
                 secondary_metric=float(r.get("secondary_metric", 5.0)),
                 status_descriptor=r.get("status_descriptor", "NOMINAL"),
-                is_critical_flag=bool(r.get("is_critical_flag", False)),
+                is_critical_flag=_parse_csv_bool(r.get("is_critical_flag", False)),
             )
             dossier = supervisor.process_task(payload)
             row_dict = dict(r)
