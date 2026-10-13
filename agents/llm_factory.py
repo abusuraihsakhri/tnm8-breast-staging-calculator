@@ -1,5 +1,6 @@
 """
-Inference Engine supporting local Ollama, Claude, OpenAI, and deterministic Mock with Zero-PHI checks.
+Nonclinical deterministic mock adapter. All provider identifiers resolve to a mock.
+No external model calls or clinical verification are performed.
 """
 from typing import Dict, Any, Optional
 from .base import PHIGuard
