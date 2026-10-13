@@ -3,6 +3,7 @@ Supervisor Orchestrator & Operations Intelligence for Tnm8 Breast Staging Calcul
 Domain: Clinical & Biomedical AI
 """
 import uuid
+import hashlib
 from typing import Dict, Any, List, Optional
 from .base import AuditLogger, ActionExecutor, PHIGuard
 from .models import SystemTaskPayload, AgentAlert, ConsensusDossier, UrgencyLevel, SystemIntegrityStatus
@@ -50,8 +51,8 @@ class SystemSupervisor:
             actor_tier="supervisor",
             event_type="TASK_EVALUATION_COMPLETED",
             details={
-                "task_id": payload.task_id,
-                "target_identifier": payload.target_identifier,
+                "task_id_sha256": hashlib.sha256(payload.task_id.encode()).hexdigest(),
+                "target_id_sha256": hashlib.sha256(payload.target_identifier.encode()).hexdigest(),
                 "overall_urgency": overall_urgency.value,
                 "total_alerts": len(all_alerts),
             }

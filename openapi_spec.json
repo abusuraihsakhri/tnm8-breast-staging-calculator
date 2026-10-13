@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Tnm8 Breast Staging Calculator API",
-    "description": "Enterprise Distributed Component Platform (Clinical & Cryptographic AI) adhering to CAP / CLSI / NIST Standards.",
-    "version": "3.0.0-ENTERPRISE",
+    "description": "AJCC8 anatomic breast staging reference and nonclinical experimental audit endpoints; generated API schema available at /openapi.json.",
+    "version": "1.0.0",
     "contact": {
       "name": "Dr. Abu Suraih Sakhri",
       "url": "https://github.com/abusuraihsakhri"
@@ -22,7 +22,7 @@
     },
     "/metrics": {
       "get": {
-        "summary": "Prometheus operational metrics",
+        "summary": "JSON in-memory counters (not Prometheus format)",
         "responses": {
           "200": {
             "description": "Prometheus text metrics"
@@ -32,7 +32,7 @@
     },
     "/api/audit": {
       "post": {
-        "summary": "Dispatch task payload across specialized workers",
+        "summary": "Legacy experimental metrics audit (requires X-Admin-Token; not breast staging)",
         "requestBody": {
           "content": {
             "application/json": {
@@ -76,7 +76,7 @@
     },
     "/api/chat": {
       "post": {
-        "summary": "Air-gapped supervisory conversational assistant",
+        "summary": "Mock-only legacy chat (requires X-Admin-Token)",
         "requestBody": {
           "content": {
             "application/json": {
@@ -103,10 +103,49 @@
     },
     "/api/audit/logs": {
       "get": {
-        "summary": "Retrieve and cryptographically verify HMAC audit trail",
+        "summary": "Read signed audit metadata (requires X-Admin-Token)",
         "responses": {
           "200": {
             "description": "Cryptographic audit trail"
+          }
+        }
+      }
+    },
+    "/api/stage": {
+      "post": {
+        "summary": "AJCC8 anatomic stage group only",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "t",
+                  "n",
+                  "m"
+                ],
+                "properties": {
+                  "t": {
+                    "type": "string"
+                  },
+                  "n": {
+                    "type": "string"
+                  },
+                  "m": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Anatomic stage group; prognostic stage not calculated"
+          },
+          "422": {
+            "description": "Invalid or unsupported TNM combination"
           }
         }
       }

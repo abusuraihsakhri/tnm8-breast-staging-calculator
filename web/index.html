@@ -1,236 +1,102 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tnm8 Breast Staging Calculator — Operations Console</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #090d16;
-            --card: #111827;
-            --border: #1f293d;
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.25);
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            padding: 2rem;
-            min-height: 100vh;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .header-title h1 { font-size: 1.6rem; font-weight: 700; color: #fff; }
-        .header-title p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
-        .badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            background: var(--accent-glow);
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 1.5rem;
-        }
-        .card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-        .card h2 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-        input, select, textarea {
-            width: 100%;
-            padding: 0.65rem 0.9rem;
-            background: #0d1322;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: #fff;
-            font-family: inherit;
-            font-size: 0.9rem;
-        }
-        input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-        .btn {
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            padding: 0.7rem 1.4rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            width: 100%;
-        }
-        .btn:hover { background: #2563eb; }
-        .terminal {
-            background: #060911;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: #10b981;
-            height: 380px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-        }
-        .metrics-bar {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .metric-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-        .metric-val { font-size: 1.4rem; font-weight: 700; color: #fff; margin-top: 0.25rem; }
-        .metric-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fb">
+  <meta name="description" content="Offline-capable reference calculator for AJCC eighth-edition breast cancer anatomic stage groups.">
+  <title>Breast Cancer | AJCC 8 Anatomic Staging</title>
+  <style>
+    :root { color-scheme: light; --ink:#17233e; --muted:#52617a; --accent:#254cb2; --line:#dce3ef; --surface:#fff; --bg:#f5f7fb; --danger:#ae2537; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { max-width:980px; margin:auto; padding:clamp(20px,5vw,54px) 20px 42px; }
+    .eyebrow { text-transform:uppercase; letter-spacing:.11em; font-size:.76rem; font-weight:750; color:var(--accent); }
+    h1 { font-size:clamp(1.7rem,4vw,2.75rem); line-height:1.2; letter-spacing:-.035em; margin:10px 0; }
+    .lead { color:var(--muted); max-width:670px; margin:0 0 26px; }
+    .layout { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(285px,.9fr); gap:22px; }
+    .panel { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:clamp(20px,3vw,30px); box-shadow:0 8px 25px #1c32600b; }
+    h2 { font-size:1.13rem; line-height:1.35; margin:0 0 10px; }
+    p { margin:0 0 16px; }
+    label { display:block; font-weight:700; font-size:.9rem; margin:16px 0 6px; }
+    select { display:block; width:100%; min-height:46px; border:1px solid #a8b6cc; border-radius:8px; background:white; color:var(--ink); padding:8px 12px; font:inherit; }
+    select:focus-visible, button:focus-visible, a:focus-visible { outline:3px solid #89a7ed; outline-offset:3px; }
+    .hint { font-size:.8rem; color:var(--muted); margin:5px 0 0; }
+    .actions { display:flex; gap:10px; margin-top:22px; }
+    button { min-height:46px; padding:11px 20px; border-radius:8px; border:1px solid #a7b8d9; background:white; color:var(--accent); cursor:pointer; font:inherit; font-weight:700; }
+    button[type="submit"] { background:var(--accent); color:white; border-color:var(--accent); flex:1; }
+    button:hover { filter:brightness(.94); }
+    .result-label { color:var(--muted); font-size:.87rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+    #result { font-size:clamp(2.3rem,6vw,3.7rem); font-weight:750; margin:14px 0 6px; color:var(--accent); line-height:1.12; }
+    #result.error { font-size:1.8rem; color:var(--danger); }
+    #message { color:var(--muted); min-height:68px; }
+    .note { border-top:1px solid var(--line); padding-top:18px; font-size:.89rem; }
+    .note strong { color:var(--ink); }
+    .reference { margin-top:22px; font-size:.9rem; color:var(--muted); }
+    a { color:var(--accent); text-underline-offset:3px; }
+    footer { color:var(--muted); font-size:.81rem; margin-top:25px; }
+    @media (max-width:720px) { .layout { grid-template-columns:1fr; } main { padding:24px 16px; } }
+  </style>
+  <script src="./app.js" defer></script>
 </head>
 <body>
-
-    <div class="header">
-        <div class="header-title">
-            <h1>Tnm8 Breast Staging Calculator</h1>
-            <p>Domain: Clinical & Cryptographic AI | Standard: CAP / CLSI / NIST Standards | LabMind-Atlas Architecture</p>
+<main>
+  <header>
+    <div class="eyebrow">Breast oncology · staging reference</div>
+    <h1>AJCC 8 Breast Cancer Anatomic Stage</h1>
+    <p class="lead">Determine the <strong>anatomic stage group</strong> (0–IV) from established T, N and M categories. This calculator operates entirely in your browser.</p>
+  </header>
+  <div class="layout">
+    <section class="panel" aria-labelledby="form-title">
+      <h2 id="form-title">TNM categories</h2>
+      <form id="stage-form">
+        <label for="t">Primary tumor (T)</label>
+        <select id="t" required>
+          <option value="Tis">Tis — Carcinoma in situ</option>
+          <option value="T0">T0 — No evidence of primary tumor</option>
+          <option value="T1" selected>T1 — ≤ 20 mm (includes T1mi)</option>
+          <option value="T2">T2 — &gt; 20–50 mm</option>
+          <option value="T3">T3 — &gt; 50 mm</option>
+          <option value="T4">T4 — Chest wall/skin extension (incl. inflammatory)</option>
+          <option value="TX">TX — Cannot assess</option>
+        </select>
+        <p class="hint">Enter the established T category, not tumor dimensions alone.</p>
+        <label for="n">Regional lymph nodes (N)</label>
+        <select id="n" required>
+          <option value="N0" selected>N0 — No regional nodal metastasis</option>
+          <option value="N1mi">N1mi — Micrometastases</option>
+          <option value="N1">N1 — Regional node category 1</option>
+          <option value="N2">N2 — Regional node category 2</option>
+          <option value="N3">N3 — Regional node category 3</option>
+          <option value="NX">NX — Cannot assess</option>
+        </select>
+        <label for="m">Distant metastases (M)</label>
+        <select id="m" required>
+          <option value="M0" selected>M0 — No distant metastases</option>
+          <option value="M1">M1 — Distant metastases</option>
+        </select>
+        <div class="actions">
+          <button type="submit">Calculate stage</button>
+          <button type="reset">Reset</button>
         </div>
-        <div>
-            <span class="badge">Air-Gapped Active</span>
-            <span class="badge" style="background: rgba(16,185,129,0.2); color: #10b981; border-color: #10b981;">Zero-PHI Guard Active</span>
-        </div>
-    </div>
-
-    <div class="metrics-bar">
-        <div class="metric-box">
-            <div class="metric-label">System Status</div>
-            <div class="metric-val" style="color: var(--success);" id="m-status">OPTIMAL</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Tasks Processed</div>
-            <div class="metric-val" id="m-tasks">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">Audit Blocks Signed</div>
-            <div class="metric-val" id="m-audit">142</div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-label">PHI Interceptions</div>
-            <div class="metric-val" style="color: var(--accent);" id="m-phi">0</div>
-        </div>
-    </div>
-
-    <div class="grid">
-        <div class="card">
-            <h2>⚙️ Dispatch Distributed Component Audit</h2>
-            <div class="form-group">
-                <label>Task / Sample ID</label>
-                <input type="text" id="task_id" value="TASK-2026-LIVE-01">
-            </div>
-            <div class="form-group">
-                <label>Target Identifier</label>
-                <input type="text" id="target_id" value="SPECIMEN-ALPHA-77">
-            </div>
-            <div class="form-group">
-                <label>Primary Measurement / Value</label>
-                <input type="number" id="primary_metric" value="29.4" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Secondary Metric / Kinetic Index</label>
-                <input type="number" id="secondary_metric" value="14.8" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Status / Phenotype Descriptor</label>
-                <input type="text" id="status_descriptor" value="DISCORDANT_ANOMALY">
-            </div>
-            <div class="form-group">
-                <label><input type="checkbox" id="is_critical" checked> Trigger Emergency / Critical Flag</label>
-            </div>
-            <button class="btn" onclick="runAudit()">Execute Distributed Component Audit</button>
-        </div>
-
-        <div class="card">
-            <h2>📊 Real-Time Consensus Dossier & Audit Log</h2>
-            <div class="terminal" id="outputConsole">// Tnm8 Breast Staging Calculator Operations Console Ready
-// Connection established with Air-Gapped Supervisor
-// Cryptographic HMAC-SHA256 audit ledger loaded.
-// Ready for live task payload dispatch...</div>
-        </div>
-    </div>
-
-    <script>
-        async function runAudit() {
-            const consoleEl = document.getElementById('outputConsole');
-            consoleEl.innerText = "// Dispatching task across specialized workers...
-// Invoking InvariantQCWorker, SafetyEscalationWorker, ProtocolWorker...";
-
-            const payload = {
-                task_id: document.getElementById('task_id').value,
-                target_identifier: document.getElementById('target_id').value,
-                primary_metric: parseFloat(document.getElementById('primary_metric').value),
-                secondary_metric: parseFloat(document.getElementById('secondary_metric').value),
-                status_descriptor: document.getElementById('status_descriptor').value,
-                is_critical_flag: document.getElementById('is_critical').checked
-            };
-
-            try {
-                const res = await fetch('/api/audit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                consoleEl.innerText = JSON.stringify(data, null, 2);
-                document.getElementById('m-tasks').innerText = parseInt(document.getElementById('m-tasks').innerText) + 1;
-                document.getElementById('m-audit').innerText = parseInt(document.getElementById('m-audit').innerText) + 1;
-            } catch (err) {
-                consoleEl.innerText = "// Offline / Simulation Output:\n" + JSON.stringify({
-                    dossier_id: "DOSSIER-SIM-" + Math.floor(Math.random()*10000),
-                    system: "tnm8-breast-staging-calculator",
-                    domain: "Clinical & Cryptographic AI",
-                    task_id: payload.task_id,
-                    overall_urgency: payload.is_critical_flag ? "CRITICAL_STAT_PANIC" : "ELEVATED_RISK",
-                    integrity_status: "DISCORDANT_ANOMALY",
-                    alerts: [
-                        { worker: "InvariantQCWorker", alert: "Primary metric exceeds upper reference bound" },
-                        { worker: "SafetyEscalationWorker", alert: "Critical emergency interlock flag active" }
-                    ],
-                    audit_hash: "HMAC_SHA256_e83f9a72b941d6c381f9"
-                }, null, 2);
-            }
-        }
-    </script>
+      </form>
+    </section>
+    <section class="panel" aria-labelledby="output-title">
+      <h2 id="output-title">Stage result</h2>
+      <div role="status" aria-live="polite" aria-atomic="true">
+        <div class="result-label">Anatomic stage group</div>
+        <div id="result">—</div>
+        <p id="message">Enter a TNM combination and select Calculate.</p>
+      </div>
+      <div class="note">
+        <p><strong>Not a prognostic stage.</strong> AJCC 8 clinical and pathological prognostic stages also use grade, ER, PR, HER2 and, when applicable, genomic information. Those stages are not calculated here.</p>
+        <p><strong>Limitations.</strong> No post-neoadjuvant staging, automatic T/N assignment, or treatment recommendation. Unknown or inconsistent categories are not assigned a stage.</p>
+        <p><strong>Privacy.</strong> No patient identifiers are requested. Calculations use local JavaScript without transmitting form contents to a server.</p>
+      </div>
+    </section>
+  </div>
+  <p class="reference">Source: <a href="https://www.cancer.gov/types/breast/hp/breast-treatment-pdq" target="_blank" rel="noopener noreferrer">National Cancer Institute PDQ, Breast Cancer Treatment — AJCC Anatomical Stage Groups (Table 8)</a>. Confirm formal staging against current institutional/AJCC guidance.</p>
+  <footer>Educational and research reference only · Not for autonomous clinical decision-making.</footer>
+</main>
 </body>
 </html>

@@ -1,184 +1,83 @@
 # TNM8 Breast Staging Calculator
 
-> **Domain:** Medical Oncology & Cancer Staging Systems
-> **Reference Guidelines & Standards:** `AJCC Cancer Staging Manual & NCCN Clinical Practice Guidelines`
+An offline-capable **AJCC 8th-edition breast cancer anatomic stage-group reference**. Given established T, N and M categories, the application returns anatomical stage **0, IA–IIIC or IV**, using the NCI PDQ anatomical stage-group table.
 
-<div align="center">
+**Scope:** This is **not** an AJCC 8 clinical or pathological *prognostic* stage calculator. Prognostic staging requires tumor grade, ER, PR, HER2 and sometimes additional information. Do not infer prognostic stage or treatment decisions from the anatomical result alone. Not independently validated for clinical deployment.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+## Browser interface
 
-</div>
+The self-contained website is in [`web/index.html`](web/index.html). It needs no backend, package installation, account, or browser-Python runtime. Run it locally by opening the file or with:
 
----
-
-## Overview
-
-AJCC 8th Ed. Breast Cancer Stage Calculator with single and batch evaluation capabilities.
-
-- Calculates composite scores with clinical classification (Low/Moderate/High)
-- Single-case evaluation via CLI
-- Batch processing for CSV datasets
-- Enterprise agent framework with PHI protection and audit trail
-- FastAPI REST server for integration
-
-Author: Dr. Abu Suraih Sakhri
-License: MIT
-
----
-
-## Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/abusuraihsakhri/tnm8-breast-staging-calculator.git
-cd tnm8-breast-staging-calculator
-
-# Install dependencies
-pip install -r requirements.txt
+```sh
+python -m http.server 8001 --directory web
+# Open http://localhost:8001
 ```
 
----
+Choose primary tumor (T), regional nodes (N) and distant metastasis (M), then select **Calculate stage**. Unsupported combinations report an error rather than an invented stage. No identifiers are requested or sent to a server by the browser calculator.
 
-## Usage
+## Python CLI
 
-### 1. Single Case Evaluation
-```bash
-python tnm8_breast.py single --v1 14.5 --v2 4.2 --v3 1.8
+Python 3.10+ is supported. Anatomic staging uses only the standard library.
+
+```sh
+python tnm8_breast.py stage --t T2 --n N1mi --m M0
+# anatomic_stage: IIB
+
+python tnm8_breast.py stage-batch -i sample_tnm.csv -o staged.csv
 ```
 
-### 2. Batch Processing
-```bash
-python tnm8_breast.py batch -i sample.csv -o results.csv
+Batch input must include `T,N,M` header columns; other columns are retained. Invalid rows stop processing with the line number, without writing a partial output file.
+
+Python API:
+
+```python
+from staging import anatomic_stage
+print(anatomic_stage("T1", "N0", "M0"))
 ```
 
-### 3. Enterprise Agent CLI
-```bash
-# Run single task evaluation
-python cli.py audit --task-id TASK-001 --primary 28.5 --secondary 14.2
+Accepted prefixes `c`/`p`, selected T/N subcategories, `T1mi`, `N1mi`, and `M0(i+)` are normalized. Invalid `pM0`, unknown M0 groups, or post-neoadjuvant categories are rejected. M1 is stage IV regardless of the other categories.
 
-# Batch process via agent framework
-python cli.py batch -i sample.csv -o results.csv
+## Optional FastAPI service
 
-# Verify HMAC audit trail integrity
-python cli.py verify-audit
-
-# Query the supervisory chat
-python cli.py chat "Explain staging criteria"
-```
-
-### 4. REST API Server
-```bash
+```sh
+python -m pip install -r requirements.txt
 python cli.py serve --host 127.0.0.1 --port 8000
 ```
 
-API Endpoints:
-- `GET /health` - Health check
-- `GET /metrics` - Prometheus operational metrics
-- `POST /api/audit` - Submit task for evaluation
-- `POST /api/chat` - Supervisory chat query
-- `GET /api/audit/logs` - Retrieve and verify audit trail
+The service serves the browser interface at `/` and offers `POST /api/stage`:
 
-### 5. High-Throughput Simulation
-```bash
-python simulator.py 1000
+```sh
+curl -X POST http://127.0.0.1:8000/api/stage \
+  -H "Content-Type: application/json" \
+  -d '{"t":"T2","n":"N1","m":"M0"}'
 ```
 
----
+Swagger/OpenAPI documentation is available at `/docs` and `/openapi.json`.
 
-## Input Data Schema
+Legacy modules (`cli.py audit`, `batch`, `chat`, `simulator.py`, `enrichment.py`, and `tnm8_breast.py single/batch`) are retained for compatibility. **Their synthetic numerical thresholds, scoring tiers, agent alerts and mock chat output are not AJCC staging, clinical risk predictions or validated medical advice.** The `sample.csv` file uses this separate legacy numerical format.
 
-| Field | Description | Requirement |
-|:------|:------------|:------------|
-| `Patient_ID` | Patient identifier | Required |
-| `v1` | Primary measurement value | Required |
-| `v2` | Secondary measurement value | Optional |
-| `v3` | Tertiary measurement value | Optional |
+## Security and privacy
 
----
+The static browser tool computes entirely client-side, with no third-party scripts or tracking. The server's legacy `/api/audit`, `/api/chat`, and `/api/audit/logs` endpoints require an `X-Admin-Token` header matching `API_ADMIN_TOKEN`. Configure a unique `AUDIT_SECRET_KEY` for stable HMAC audit signing, and `ALLOWED_HOSTS` for non-local deployment; see [`.env.example`](.env.example). Do not commit secret values.
 
-## Security Features
+The legacy regex-based PHI checks are **not complete de-identification or a HIPAA compliance guarantee**. The experimental service uses in-memory state and is not designed for real patient data or production clinical records. Do not expose it to the public internet without additional operational security and authentication controls.
 
-- **Zero-PHI Outbound Interceptor:** Blocks SSNs, MRNs, phone numbers, emails, and patient identifiers from outbound data
-- **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs with integrity verification
-- **Path Traversal Protection:** Validates all file paths before I/O operations
-- **Input Sanitization:** Strips control characters and validates all inputs
+## Tests and development
 
-### Environment Variables
-
-| Variable | Description | Default |
-|:---------|:------------|:--------|
-| `AUDIT_SECRET_KEY` | Secret key for HMAC audit signing | Ephemeral random key (warns if unset) |
-| `MODEL_PROVIDER` | LLM provider for agent framework | `mock` |
-
----
-
-## Testing
-
-```bash
-# Run all tests
-pytest -v
-
-# Run with coverage
-pytest -v --cov=. --cov-report=html
+```sh
+python -m pip install -r requirements.txt
+python -m pytest -q
+node --test web/staging.test.cjs
+node --check web/app.js
 ```
 
-Test suite includes:
-- Core algorithm tests (single + batch)
-- Enrichment engine tests
-- PHI guard enforcement tests
-- Worker agent evaluation tests
-- Supervisor consensus + audit tests
-- **Security tests (path traversal, input sanitization, tamper detection)**
+GitHub Actions runs Python tests on 3.10–3.12 and JavaScript tests; on pushes to `master`, it attempts GitHub Pages publication from `web/`. Deployment depends on Pages being enabled and successful workflow permissions.
 
----
+## References and limitations
 
-## Container Deployment
+- [NCI Breast Cancer Treatment (PDQ): AJCC Anatomical Stage Groups, Table 8](https://www.cancer.gov/types/breast/hp/breast-treatment-pdq)
+- [AJCC cancer staging systems](https://www.facs.org/quality-programs/cancer-programs/american-joint-committee-on-cancer/version-9/)
 
-```bash
-docker build -t tnm8-breast-staging-calculator .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key tnm8-breast-staging-calculator
-```
+This implementation provides group assignment from **known** TNM categories; it does not determine T or N from images, pathology, or clinical findings. It is not a substitute for the full AJCC staging manual, institutional guidance, or oncology/pathology review.
 
-Or with Docker Compose:
-
-```bash
-docker-compose up -d
-```
-
----
-
-## Project Structure
-
-```
-tnm8-breast-staging-calculator/
-├── tnm8_breast.py          # Core domain algorithm + CLI
-├── cli.py                   # Enterprise agent CLI
-├── simulator.py             # High-throughput simulation
-├── enrichment.py            # Enrichment feature engines
-├── requirements.txt         # Python dependencies
-├── Dockerfile              # Container build spec
-├── docker-compose.yml      # Container orchestration
-├── agents/                 # Enterprise agent framework
-│   ├── __init__.py
-│   ├── api.py              # FastAPI REST server
-│   ├── base.py             # Security, PHI guard, audit trail
-│   ├── models.py           # Pydantic data models
-│   ├── supervisor.py       # Multi-agent orchestrator
-│   ├── workers.py          # Specialized evaluation workers
-│   ├── llm_factory.py      # LLM provider factory
-│   ├── metrics.py          # Prometheus metrics
-│   ├── learning.py         # Bayesian calibration engine
-│   └── streamer.py         # WebSocket telemetry
-├── tests/                  # Test suite
-│   ├── test_tnm8_breast_staging_calculator.py
-│   ├── test_enrichment.py
-│   └── test_security.py    # Security-focused tests
-├── web/                    # Operations console UI
-├── sample.csv              # Example input data
-└── benchmark_dataset.json  # Benchmark test cases
-```
+**License:** [MIT](LICENSE).
