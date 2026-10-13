@@ -65,7 +65,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "HEALTHY", "service": "tnm8-breast-staging-calculator", "domain": "Clinical & Biomedical AI", "standard": "CAP / CLSI / ISO Standards", "version": "1.0.0"}
+    return {"status": "ok", "service": "tnm8-breast-staging-calculator", "staging_scope": "AJCC8 anatomic only", "version": "1.0.0"}
 
 
 @app.get("/metrics")
